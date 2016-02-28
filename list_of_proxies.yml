@@ -1,0 +1,24 @@
+
+--- 
+proxy_list: 
+  - 
+    id: one
+    url: "http://172.17.42.1:8123"
+    docker:
+      tor: torproxy
+      polipo: polipo3
+
+  - 
+    id: two
+    url: "http://172.17.42.1:8124"
+    docker:
+      tor: torproxy5
+      polipo: polipo5
+
+  - 
+    id: three
+    url: "http://172.17.42.1:8125"
+    docker:
+      tor: torproxy6
+      polipo: polipo6
+
