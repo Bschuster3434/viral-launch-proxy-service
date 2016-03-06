@@ -8,6 +8,8 @@ import json
 
 import urllib, time
 
+import docker
+
 from flask import Flask
 from flask import request, Response
 
@@ -26,6 +28,7 @@ except:
 	print("Can not load proxy list")
 	sys.exit()
 
+docker_cli = docker.Client(base_url = 'unix://var/run/docker.sock', version='auto')
 
 # This is called by atexit
 def shutdown_thread():
@@ -42,19 +45,25 @@ def process_thread():
 		# Step through the list of proxies and test them.
 		for proxy in proxy_list['proxy_list']:
 			print "Going to hit %s" % proxy['id']
-			url = 'http://www.timeapi.org/utc/now.json?q=%d' % time.time()
+			url = '%s?q=%d' % ( proxy_list['testing_url'], time.time() )
+			result=500
 			try: 
-				response = urllib.urlopen(url)
+				response = urllib.urlopen(url, proxies={'http':proxy['url']})
+				result=response.getcode()
 			except:
 				pass
 			print(proxy)
 			print(proxy_list)
-			if response.getcode() != 200: 
-				print("Response: %d" % response.getcode())
+			if result != 200: 
+				print("FAILED Response: %d" % result)
 				proxy['working'] = False
+				proxy['response'] = 'NA'
+				docker_cli.restart(proxy['docker']['tor'])
+				docker_cli.restart(proxy['docker']['polipo'])
 			else:
-				print("Response: %s" % response.read())
+				print("Response: %s" % result)
 				proxy['working'] = True
+				proxy['response'] = response.read()
 
 	your_thread = threading.Timer(POLL_TIME, process_thread, ())
 	your_thread.start()
@@ -68,7 +77,15 @@ def start_thread():
 	your_thread.start()
 	print("Initial Start thread %s!" % your_thread.ident)
 
+def strip_proxy_list( proxy_list ):
+	new_list = list()
+	for entry in proxy_list['proxy_list']:
+        	if entry['working'] is True:
+                	new_list.append(entry)
+	new_dict = dict()
+	new_dict['proxy_list'] = new_list
 
+	return new_dict
 
 
 @app.route('/')
@@ -81,6 +98,13 @@ def list_proxies():
 		return yaml.dump( proxy_list )
 	else:
 		return json.dumps( proxy_list )
+
+@app.route('/proxy_list_filtered')
+def list_proxies_filtered():
+	if request.args.get('json', True) is False:
+		return yaml.dumps( strip_proxy_list(proxy_list) )
+	else:
+		return json.dumps( strip_proxy_list(proxy_list) )
 
 
 

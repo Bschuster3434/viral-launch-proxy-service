@@ -1,5 +1,7 @@
 
 --- 
+testing_url: "http://ipinfo.io/json"
+
 proxy_list: 
   - 
     id: one
@@ -20,5 +22,5 @@ proxy_list:
     url: "http://172.17.42.1:8125"
     docker:
       tor: torproxy6
-      polipo: polipo6
+      polipo: polipo6a
 
