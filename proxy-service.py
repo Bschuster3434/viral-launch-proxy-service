@@ -47,14 +47,17 @@ def process_thread():
 			print "Going to hit %s" % proxy['id']
 			url = '%s?q=%d' % ( proxy_list['testing_url'], time.time() )
 			result=500
+			request_time = 10000
 			try: 
+				start_time = time.time()
 				response = urllib.urlopen(url, proxies={'http':proxy['url']})
 				result=response.getcode()
+				request_time = time.time() - start_time
 			except:
 				pass
 			print(proxy)
 			print(proxy_list)
-			if result != 200: 
+			if result != 200 or request_time > proxy_list['max_request_time']: 
 				print("FAILED Response: %d" % result)
 				proxy['working'] = False
 				proxy['response'] = 'NA'
@@ -64,6 +67,7 @@ def process_thread():
 				print("Response: %s" % result)
 				proxy['working'] = True
 				proxy['response'] = response.read()
+				proxy['time'] = request_time
 
 	your_thread = threading.Timer(POLL_TIME, process_thread, ())
 	your_thread.start()
