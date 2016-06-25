@@ -44,6 +44,12 @@ def process_thread():
 
 		# Step through the list of proxies and test them.
 		for proxy in proxy_list['proxy_list']:
+			if not proxy['enabled']:
+				print "Proxy %s is disabled.. skipping." % proxy['id']
+				print("SKIPPED")
+				proxy['working'] = False
+				proxy['response'] = 'NA'
+				continue
 			print "Going to hit %s" % proxy['id']
 			url = '%s?q=%d' % ( proxy_list['testing_url'], time.time() )
 			result=500
@@ -58,11 +64,12 @@ def process_thread():
 			print(proxy)
 			print(proxy_list)
 			if result != 200 or request_time > proxy_list['max_request_time']: 
-				print("FAILED Response: %d" % result)
+				print("FAILED Response: %d in %d time" % ( result, request_time ))
 				proxy['working'] = False
 				proxy['response'] = 'NA'
-				docker_cli.restart(proxy['docker']['tor'])
-				docker_cli.restart(proxy['docker']['polipo'])
+				if 'docker' in proxy:
+					docker_cli.restart(proxy['docker']['tor'])
+					docker_cli.restart(proxy['docker']['polipo'])
 			else:
 				print("Response: %s" % result)
 				proxy['working'] = True

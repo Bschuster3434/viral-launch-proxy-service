@@ -1,0 +1,4 @@
+
+
+curl -s http://127.0.0.1:5000/proxy_list_filtered | python -m json.tool | grep response |cut -c 12-
+
