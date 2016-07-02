@@ -74,6 +74,7 @@ def process_thread():
 				print("Response: %s" % result)
 				proxy['working'] = True
 				proxy['response'] = response.read()
+				proxy['result'] = result
 				proxy['time'] = request_time
 
 	your_thread = threading.Timer(POLL_TIME, process_thread, ())
