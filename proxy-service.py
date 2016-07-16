@@ -10,6 +10,8 @@ import urllib, time
 
 import docker
 
+import unicodedata
+
 from flask import Flask
 from flask import request, Response
 
@@ -45,6 +47,10 @@ def process_thread():
 		# Step through the list of proxies and test them.
 		for proxy in proxy_list['proxy_list']:
 			if not proxy['enabled']:
+#				if 'docker' in proxy:
+#					print "Proxy is a docker proxy.. restarting it."
+#					docker_cli.restart(proxy['docker']['tor'])
+#					docker_cli.restart(proxy['docker']['polipo'])
 				print "Proxy %s is disabled.. skipping." % proxy['id']
 				print("SKIPPED")
 				proxy['working'] = False
@@ -103,6 +109,41 @@ def strip_proxy_list( proxy_list ):
 @app.route('/')
 def hello_world():
 	return app.send_static_file('index.html')
+
+@app.route('/add_proxy/<id>/<url>')
+def add_proxy( id, url ):
+	id = int(unicodedata.normalize('NFKD', id).encode('ascii','ignore'))
+	clean_url = unicodedata.normalize('NFKD', url).encode('ascii','ignore')
+	proxy_list['proxy_list'].append( { 'id' : id, 'url' : clean_url.replace('_', '/'), 'enabled':True, 'working':True } )
+	return "Proxy added: %s %s" % ( id, url.replace('_', '/') )
+
+@app.route('/enable_proxy/<url>')
+def enable_proxy( url ):
+	clean_url = unicodedata.normalize('NFKD', url).encode('ascii','ignore')
+
+	# Step through the proxies looking for either id or URL
+	for proxy in proxy_list['proxy_list']:
+		if proxy['id'] == int(clean_url) or proxy['url'] == clean_url:
+			proxy_list['proxy_list'].append( { 'id' : id, 'url' : clean_url.replace('_', '/'), 'enabled':True, 'working':False } )
+			return "IGNORED - Proxy enabled: %s" % ( clean_url )
+	return "Could not find: %s" % ( clean_url )
+
+@app.route('/disable_proxy/<url>')
+def disable_proxy( url ):
+	clean_url = unicodedata.normalize('NFKD', url).encode('ascii','ignore')
+
+	# Step through the proxies looking for either id or URL
+	for proxy in proxy_list['proxy_list']:
+		if proxy['id'] == int(clean_url) or proxy['url'] == clean_url:
+			proxy_list['proxy_list'].append( { 'id' : id, 'url' : clean_url.replace('_', '/'), 'enabled':False, 'working':False } )
+			return "IGNORED - Proxy disabled: %s" % ( clean_url )
+	return "Could not find: %s" % ( clean_url )
+
+@app.route('/write_config/<filename>')
+def write_config(filename):
+	with open(filename, 'w') as outfile:
+		outfile.write( yaml.dump( proxy_list, default_flow_style=False) )
+	return "File written"
 
 @app.route('/proxy_list')
 def list_proxies():

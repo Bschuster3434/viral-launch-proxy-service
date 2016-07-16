@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import socket
-socket.setdefaulttimeout(2)
+socket.setdefaulttimeout(1)
 
 import urllib, json, time, sys
 
@@ -54,12 +54,21 @@ while proxy_url is False:
 	if Debug: print "Finding proxy.."
 	tries += 1 
 	( proxy_url, request_time ) = find_proxy(url, timeout, testing_url)
+	id = int(time.time())
 
 if proxy_url:
+
+	if len(sys.argv) > 1:
+		print "curl -s http://127.0.0.1:5000/add_proxy/%s/%s" % (id, urllib.quote(proxy_url.replace('/','_')))
+		response = urllib.urlopen( "http://127.0.0.1:5000/add_proxy/%d/%s" % (id, urllib.quote(proxy_url.replace('/','_')) ))
+		print response.getcode()
+		print response.read()
+		
+
 	print "\n\n"
 	print "  -"
 	print "    tries: %d"%int(tries)
-	print "    id: %d"%int(time.time())
+	print "    id: %d"%int(id)
 	print "    request_time: %f"% request_time
 	print "    enabled: 1"
 	print "    url: \"%s\"" % proxy_url
