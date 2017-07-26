@@ -1,0 +1,5 @@
+/usr/bin/docker restart torproxy && /usr/bin/docker restart polipo3
+//usr/bin/docker restart torproxy5 && /usr/bin/docker restart polipo5
+/usr/bin/docker restart torproxy6 && /usr/bin/docker restart polipo6
+/usr/bin/docker restart torproxy6 && /usr/bin/docker restart polipo6
+/usr/bin/docker restart torproxy7 && /usr/bin/docker restart polipo7

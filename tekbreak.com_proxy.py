@@ -1,30 +1,32 @@
 #!/usr/bin/python
 
 import socket
-socket.setdefaulttimeout(1)
+socket.setdefaulttimeout(10)
 
-import urllib, json, time, sys, random
-
-urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None) # Disable urlopen's password prompt (Dumb!)
-
+import urllib, json, time, sys
 
 testing_url="http://iq-colo.sneaky.net/cgi-bin/ip.py"
 timeout = 10
-url = 'http://gimmeproxy.com/api/getProxy?country=US&supportsHttps=true&protocol=http&api_key=ec7105f1-2609-4bfc-8907-4346a48fb821'
-#url = 'http://gimmeproxy.com/api/getProxy?country=US&supportsHttps=true&protocol=socks4&api_key=ec7105f1-2609-4bfc-8907-4346a48fb821'
-#url = 'http://127.0.0.1:5001/proxy_list_filtered '
+#use_proxies = {'http':'http://204.13.205.143:8080'}
+url = 'http://proxy.tekbreak.com/20/json'
 
 Debug = False;
+
+class AppURLopener(urllib.FancyURLopener):
+	version = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.89 Safari/537.36'
+
+#urllib._urlopener = AppURLopener()
 
 
 def find_proxy( url, timeout, testing_url):
 
-	print "Requesting proxy address"
+	
+
 	socket.setdefaulttimeout(15)
 	try:
 		response = urllib.urlopen( url )
 	except:
-		"Request to get proxy failed."
+		if Debug: print "Request to get proxy failed."
 		return (False, False)
 
 	result=response.getcode()
@@ -37,14 +39,28 @@ def find_proxy( url, timeout, testing_url):
 		print content
 		sys.exit()
 
-	if Debug: print data['curl']
-	print "Testing returned proxy: %s" % data['curl']
+	print "got the data.. stepping through"
+	# Step through the returned array
+	url = 'None'
+	for proxy in data:
+		print proxy
+		if proxy['country'] == 'USA' and proxy['type'] == 'HTTPS':
+			print "Got USA"
+			# {u'type': u'socks4/5', u'ip': u'121.42.189.206', u'time': u'1473535921', u'flag': u'http://proxy.tekbreak.com/cn.png', u'country': u'China', u'anonymity': u'High +KA', u'speed': {u'connection_time': {u'value': u'95'}, u'response_time': {u'value': u'94'}}, u'port': u'1080'}
+			url = "%s://%s:%s" % (proxy['type'], proxy['ip'], proxy['port'])
+			print "Here: %s" % url
+
+	if url == 'None':
+		sys.exit()
+
+
+	if Debug: print url
 
 	start_time = time.time()
 
-	socket.setdefaulttimeout(10)
+	socket.setdefaulttimeout(1)
 	try:
-		response = urllib.urlopen(testing_url, proxies={'http':data['curl']})
+		response = urllib.urlopen(testing_url, proxies={'http':url})
 	except:
 		if Debug: print "Proxy test request failed."
 		return (False, False)
@@ -54,20 +70,21 @@ def find_proxy( url, timeout, testing_url):
 
 	if result == 200 and "lightspeed" not in content: 
 		if Debug: print "\n\nGot test url with %d in %f seconds" % (result, request_time)
-		return (data['curl'], request_time)
+		return (url, request_time)
 
 
 	else:
 		if Debug: print "Failed with %d and content %d" % (result, "lightspeed" in content)
 		return (False, False)
+
+
 tries = 0
 proxy_url = False
 while proxy_url is False:
 	if Debug: print "Finding proxy.."
 	tries += 1 
 	( proxy_url, request_time ) = find_proxy(url, timeout, testing_url)
-	#id = time.time()+random.randrange(1,1000)
-	id = time.time()
+	id = int(time.time())
 
 if proxy_url:
 
